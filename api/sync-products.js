@@ -16,7 +16,7 @@ export default async function handler(req, res) {
 
     for (const item of products) {
       const shopifyResponse = await fetch(
-        "https://houseofsartorial.myshopify.com/admin/api/2023-10/products.json",
+        ""https://xkhkiu-up.myshopify.com/admin/api/2023-10/products.json"",
         {
           method: "POST",
           headers: {
