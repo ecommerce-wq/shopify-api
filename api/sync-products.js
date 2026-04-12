@@ -1,58 +1,90 @@
 export default async function handler(req, res) {
   try {
-    const response = await fetch(
-      "https://srv2.best-fashion.net/ApiV3/token/38712c15e4976ba5f4647e891f559271/callType/allStockGroup"
-    );
+    const shop = process.env.SHOPIFY_SHOP;
+    const token = process.env.SHOPIFY_ACCESS_TOKEN;
 
-    const data = await response.json();
+    // 🔹 1. Simulación proveedor (luego lo conectamos real)
+    const proveedorProductos = [
+      {
+        title: "Camisa Premium Blanca",
+        price: "120000",
+        sku: "CAM-001",
+        stock: 10
+      },
+      {
+        title: "Pantalón Elegante Negro",
+        price: "180000",
+        sku: "PAN-002",
+        stock: 5
+      }
+    ];
 
-    const products = Array.isArray(data) ? data.slice(0, 1) : [data];
+    const resultados = [];
 
-    const results = [];
+    for (const producto of proveedorProductos) {
 
-    for (const item of products) {
-      const productData = {
-        title: item?.name || "Producto sin nombre",
-        body_html: item?.description || "Sin descripción",
-        vendor: item?.brand || "Proveedor",
-        product_type: item?.category || "General",
-        variants: [
-          {
-            price: item?.price ? String(item.price) : "10.00",
-          },
-        ],
-      };
+      // 🔹 2. Buscar si el producto ya existe por SKU
+      const search = await fetch(
+        `https://${shop}/admin/api/2024-04/products.json?handle=${producto.sku}`,
+        {
+          headers: {
+            "X-Shopify-Access-Token": token,
+            "Content-Type": "application/json"
+          }
+        }
+      );
 
-      try {
-        const shopifyResponse = await fetch(
-          "https://xkhkiu-up.myshopify.com/admin/api/2023-10/products.json",
+      const searchData = await search.json();
+
+      let productId = null;
+
+      if (searchData.products.length > 0) {
+        productId = searchData.products[0].id;
+      }
+
+      // 🔹 3. Crear producto si no existe
+      if (!productId) {
+        const create = await fetch(
+          `https://${shop}/admin/api/2024-04/products.json`,
           {
             method: "POST",
             headers: {
-              "X-Shopify-Access-Token": "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",
-              "Content-Type": "application/json",
+              "X-Shopify-Access-Token": token,
+              "Content-Type": "application/json"
             },
-            body: JSON.stringify({ product: productData }),
+            body: JSON.stringify({
+              product: {
+                title: producto.title,
+                variants: [
+                  {
+                    price: producto.price,
+                    sku: producto.sku,
+                    inventory_management: "shopify",
+                    inventory_quantity: producto.stock
+                  }
+                ]
+              }
+            })
           }
         );
 
-        const result = await shopifyResponse.json();
+        const created = await create.json();
+        resultados.push({ creado: created.product.title });
 
-        results.push(result);
-
-      } catch (err) {
-        results.push({ error: err.message });
+      } else {
+        resultados.push({ existente: producto.title });
       }
     }
 
-    res.status(200).json({
-      message: "Proceso terminado",
-      resultados: results,
+    return res.json({
+      status: "ok",
+      resultados
     });
 
   } catch (error) {
-    res.status(500).json({
-      error: error.message,
+    return res.status(500).json({
+      error: "Error en sync",
+      detalle: error.message
     });
   }
 }
