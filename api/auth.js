@@ -1,6 +1,6 @@
 export default function handler(req, res) {
   try {
-    const shop = process.env.SHOPIFY_SHOP;
+    const shop = process.env.SHOP;
     const client_id = process.env.SHOPIFY_API_KEY;
 
     if (!shop || !client_id) {
@@ -12,7 +12,7 @@ export default function handler(req, res) {
     }
 
     const redirect_uri = "https://shopify-api-tlow.vercel.app/api/auth/callback";
-    const scope = "read_products,write_products";
+    const scope = "read_products,write_products,read_inventory,write_inventory";
 
     const installUrl = `https://${shop}/admin/oauth/authorize?client_id=${client_id}&scope=${scope}&redirect_uri=${redirect_uri}`;
 
