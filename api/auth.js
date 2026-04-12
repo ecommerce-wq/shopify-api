@@ -14,7 +14,10 @@ export default function handler(req, res) {
     const redirect_uri = "https://shopify-api-tlow.vercel.app/api/auth/callback";
     const scope = "read_products,write_products,read_inventory,write_inventory";
 
-    const installUrl = `https://${shop}/admin/oauth/authorize?client_id=${client_id}&scope=${scope}&redirect_uri=${redirect_uri}`;
+    // 🔥 GENERAR STATE (MUY IMPORTANTE)
+    const state = Math.random().toString(36).substring(2);
+
+    const installUrl = `https://${shop}/admin/oauth/authorize?client_id=${client_id}&scope=${scope}&redirect_uri=${redirect_uri}&state=${state}`;
 
     return res.redirect(installUrl);
 
