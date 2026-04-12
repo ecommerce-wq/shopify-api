@@ -1,7 +1,7 @@
 export default function handler(req, res) {
   try {
-    const shop = process.env.SHOPIFY_SHOP;
-    const client_id = process.env.SHOPIFY_API_KEY;
+    const shop = process.env.houseofsartorial.com;
+    const client_id = process.env.e7a2b1dc9172957559f3c094c2191024;
 
     if (!shop || !client_id) {
       return res.status(500).json({
