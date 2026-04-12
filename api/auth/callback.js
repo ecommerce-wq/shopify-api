@@ -1,24 +1,41 @@
 export default async function handler(req, res) {
-  const { code, shop } = req.query;
+  try {
+    const { shop, code } = req.query;
 
-  const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      client_id: process.env.e7a2b1dc9172957559f3c094c2191024,
-      client_secret: process.env.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,
-      code
-    })
-  });
+    if (!shop || !code) {
+      return res.status(400).json({
+        error: "Faltan parámetros",
+        shop,
+        code
+      });
+    }
 
-  const data = await response.json();
+    const client_id = process.env.SHOPIFY_API_KEY;
+    const client_secret = process.env.SHOPIFY_API_SECRET;
 
-  console.log("ACCESS TOKEN:", data.access_token);
+    const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        client_id,
+        client_secret,
+        code
+      })
+    });
 
-  res.status(200).json({
-    message: "App conectada",
-    token: data.access_token
-  });
+    const data = await response.json();
+
+    return res.json({
+      message: "App instalada correctamente 🚀",
+      data
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      error: "Crash en callback",
+      detalle: error.message
+    });
+  }
 }
