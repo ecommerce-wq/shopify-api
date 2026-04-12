@@ -11,7 +11,7 @@ export default function handler(req, res) {
       });
     }
 
-    const redirect_uri = "https://shopify-api-tlow.vercel.app/api/auth/callback";
+    const redirect_uri = "https://NUEVO-DOMINIO.vercel.app/api/auth/callback";
     const scope = "read_products,write_products,read_inventory,write_inventory";
 
     // 🔥 GENERAR STATE (MUY IMPORTANTE)
