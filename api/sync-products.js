@@ -3,8 +3,25 @@ export default async function handler(req, res) {
     const shop = process.env.SHOPIFY_SHOP;
     const token = process.env.SHOPIFY_ACCESS_TOKEN;
 
-    // 🔹 1. Simulación proveedor (luego lo conectamos real)
-    const proveedorProductos = [
+    // // 🔹 1. Traer productos del proveedor REAL
+const proveedorResponse = await fetch(
+  "https://srv2.best-fashion.net/api/products",
+  {
+    headers: {
+      Authorization: "Bearer 38712c15e4976ba5f4647e891f559271"
+    }
+  }
+);
+
+const proveedorData = await proveedorResponse.json();
+
+// Ajustar según estructura real
+const proveedorProductos = proveedorData.products.map(p => ({
+  title: p.name,
+  price: p.price,
+  sku: p.sku,
+  stock: p.quantity
+}));
       {
         title: "Camisa Premium Blanca",
         price: "120000",
