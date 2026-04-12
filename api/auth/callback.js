@@ -27,10 +27,9 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    return res.json({
-      message: "App instalada correctamente 🚀",
-      data
-    });
+    console.log("TOKEN:", data.access_token);
+
+return res.redirect("https://tu-tienda.com/admin");
 
   } catch (error) {
     return res.status(500).json({
