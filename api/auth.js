@@ -1,5 +1,3 @@
-// test deploy 
-
 export default function handler(req, res) {
   try {
     const shop = process.env.xkhkiu-up.myshopify.com;
