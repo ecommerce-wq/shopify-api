@@ -88,9 +88,49 @@ const proveedorProductos = proveedorData.products.map(p => ({
         const created = await create.json();
         resultados.push({ creado: created.product.title });
 
-      } else {
-        resultados.push({ existente: producto.title });
-      }
+     } else {
+  const existingProduct = searchData.products[0];
+  const variant = existingProduct.variants[0];
+
+  const inventoryItemId = variant.inventory_item_id;
+
+  // 🔄 ACTUALIZAR INVENTARIO REAL
+  await fetch(
+    `https://${shop}/admin/api/2024-04/inventory_levels/set.json`,
+    {
+      method: "POST",
+      headers: {
+        "X-Shopify-Access-Token": token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        location_id: 1,
+        inventory_item_id: inventoryItemId,
+        available: producto.stock
+      })
+    }
+  );
+
+  // 🔄 ACTUALIZAR PRECIO
+  await fetch(
+    `https://${shop}/admin/api/2024-04/variants/${variant.id}.json`,
+    {
+      method: "PUT",
+      headers: {
+        "X-Shopify-Access-Token": token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        variant: {
+          id: variant.id,
+          price: producto.price
+        }
+      })
+    }
+  );
+
+  resultados.push({ actualizado: producto.title });
+}
     }
 
     return res.json({
