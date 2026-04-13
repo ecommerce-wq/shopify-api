@@ -3,6 +3,30 @@ export default async function handler(req, res) {
     const shop = process.env.SHOPIFY_SHOP;
     const token = process.env.SHOPIFY_ACCESS_TOKEN;
 
+    // 🔍 DEBUG SHOPIFY
+    const response = await fetch(
+      `https://${shop}/admin/api/2024-04/products.json`,
+      {
+        headers: {
+          "X-Shopify-Access-Token": token
+        }
+      }
+    );
+
+    const text = await response.text();
+
+    return res.json({
+      debug: text
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      error: "Error en sync",
+      detalle: error.message
+    });
+  }
+}
+
     // 🔹 TRAER PRODUCTOS DEL PROVEEDOR
     const proveedorResponse = await fetch(
       "https://srv2.best-fashion.net/api/products",
