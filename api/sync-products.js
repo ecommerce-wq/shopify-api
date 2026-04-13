@@ -29,8 +29,8 @@ export default async function handler(req, res) {
         sku: "CAM-001",
         quantity: 10,
         images: [
-          "https://cdn.shopify.com/s/files/1/0070/7032/products/white-shirt.jpg"
-        ]
+  "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf"
+]
       }
     ];
 
