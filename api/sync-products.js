@@ -89,6 +89,13 @@ export default async function handler(req, res) {
     }));
 
     // 🔥 FILTRO FINAL
+    const marcasDetectadas = new Set();
+
+productos.forEach(p => {
+  if (p.brand) marcasDetectadas.add(p.brand);
+});
+
+console.log("MARCAS DEL PROVEEDOR:", Array.from(marcasDetectadas));
     const filtrados = productos.filter(p =>
       p.price > 0 &&
       p.images.length > 0 &&
