@@ -52,17 +52,15 @@ export default async function handler(req, res) {
       variants: Array.isArray(p?.available_size) ? p.available_size : []
     }));
 
-    // 🔥 FILTRO SEGURO (SIN CRASH)
-    const filtrados = productos
-      .filter(p => p.price > 0)
-      .slice(0, 10);
+    // 🔥 🔥 🔥 SIN FILTROS (CLAVE)
+    const filtrados = productos.slice(0, 20);
 
     const resultados = [];
 
     for (const p of filtrados) {
       try {
 
-        // 🔍 SHOPIFY SEARCH
+        // 🔍 BUSCAR EN SHOPIFY
         const search = await fetch(
           `https://${shop}/admin/api/2024-04/products.json?limit=50`,
           {
