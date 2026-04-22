@@ -8,7 +8,7 @@ function generarDescripcion(nombre) {
 }
 
 function calcularPrecio(costo) {
-  const total = Number(costo || 0) + 150 + 60;
+  const total = Number(costo || 10) + 150 + 60;
   const usd = total / USD_RATE;
   return (usd * 1.3).toFixed(2);
 }
@@ -44,20 +44,21 @@ export default async function handler(req, res) {
       ? proveedorData
       : proveedorData.data || Object.values(proveedorData || {});
 
-    const productos = productosRaw.map(p => ({
-      name: p?.name || "Producto Premium",
-      price: Number(p?.price || 10),
-      sku: p?.style_code || Math.random().toString(36),
-      image: p?.pic1 ? imageBase + p.pic1 : null
-    }));
-
-    // 🔥 TRAER MÁS PRODUCTOS
-    const filtrados = productos.slice(0, 30);
-
     const resultados = [];
+    let creados = 0;
 
-    for (const p of filtrados) {
+    // 🔥 RECORRER MUCHOS PRODUCTOS (CLAVE)
+    for (const p of productosRaw) {
+      if (creados >= 20) break; // máximo 20 productos
+
       try {
+        const name = p?.name || "Producto Premium";
+        const price = Number(p?.price || 10);
+        const sku = p?.style_code || Math.random().toString(36);
+        const image = p?.pic1 ? imageBase + p.pic1 : null;
+
+        // 🔥 VALIDACIÓN MÍNIMA
+        if (!name || price <= 0) continue;
 
         // 🔍 BUSCAR EN SHOPIFY
         const search = await fetch(
@@ -73,12 +74,12 @@ export default async function handler(req, res) {
         const productosShopify = data?.products || [];
 
         const existe = productosShopify.find(prod =>
-          (prod?.variants || []).some(v => v?.sku === p.sku)
+          (prod?.variants || []).some(v => v?.sku === sku)
         );
 
         if (!existe) {
 
-          // 🆕 CREAR (SIN VARIANTES COMPLEJAS)
+          // 🆕 CREAR
           const create = await fetch(
             `https://${shop}/admin/api/2024-04/products.json`,
             {
@@ -89,14 +90,14 @@ export default async function handler(req, res) {
               },
               body: JSON.stringify({
                 product: {
-                  title: p.name,
-                  body_html: generarDescripcion(p.name),
+                  title: name,
+                  body_html: generarDescripcion(name),
                   tags: "premium",
-                  images: p.image ? [{ src: p.image }] : [],
+                  images: image ? [{ src: image }] : [],
                   variants: [
                     {
-                      price: calcularPrecio(p.price),
-                      sku: p.sku,
+                      price: calcularPrecio(price),
+                      sku: sku,
                       inventory_management: "shopify",
                       inventory_quantity: 0
                     }
@@ -112,6 +113,8 @@ export default async function handler(req, res) {
             creado: created?.product?.title || "ok"
           });
 
+          creados++;
+
         } else {
           resultados.push({
             existente: existe.title
@@ -125,7 +128,7 @@ export default async function handler(req, res) {
 
     return res.json({
       status: "ok",
-      total: resultados.length,
+      total: creados,
       resultados
     });
 
