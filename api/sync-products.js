@@ -76,14 +76,15 @@ return res.json({
     const imageBase = "https://" + imageBaseData.image_url;
 
     // 🔥 ADAPTAR PRODUCTOS
-    const productos = proveedorData.map(p => ({
-      name: p.name,
-      price: Number(p.price),
-      sku: p.style_code,
-      images: p.pic1 ? [imageBase + p.pic1] : [],
-      variants: p.available_size || []
-    }));
-
+    const productosRaw = proveedorData.data || Object.values(proveedorData);
+    const productos = productosRaw.map(p => ({
+  name: p.name,
+  price: Number(p.price),
+  sku: p.style_code,
+  images: p.pic1 ? [imageBase + p.pic1] : [],
+  variants: p.available_size || []
+}));
+     
     // 🔥 FILTRO PREMIUM INTELIGENTE
     const productosFiltrados = productos.filter(p => {
       const nombre = p.name.toLowerCase();
