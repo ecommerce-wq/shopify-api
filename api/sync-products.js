@@ -1,4 +1,4 @@
-// 🔥 FUNCIONES PRO (ARRIBA DE TODO)
+// 🔥 FUNCIONES PRO
 
 function generarDescripcion(nombre) {
   return `
@@ -24,10 +24,10 @@ function nombrePremium(nombre) {
   return nombre
     .replace(/camisa/i, "Camisa Premium")
     .replace(/pantalon/i, "Pantalón Elegante")
-    .replace(/blusa/i, "Blusa Sofisticada");
+    .replace(/sweater/i, "Sweater Exclusivo");
 }
 
-// 🚀 HANDLER PRINCIPAL
+// 🚀 HANDLER
 
 export default async function handler(req, res) {
   try {
@@ -35,48 +35,47 @@ export default async function handler(req, res) {
     const token = process.env.SHOPIFY_ACCESS_TOKEN;
 
     if (!shop || !token) {
-      return res.json({
-        error: "Variables no definidas",
-        shop,
-        token
-      });
+      return res.json({ error: "Variables faltantes", shop, token });
     }
 
-    // 🔹 PRODUCTOS TEMPORALES (luego reemplazamos por proveedor)
-    const productos = [
-      {
-        name: "camisa blanca elegante",
-        price: 25000,
-        sku: "CAM-001",
-        quantity: 10,
-        images: [
-          "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf"
-        ]
-      },
-      {
-        name: "pantalon negro clasico",
-        price: 40000,
-        sku: "PAN-001",
-        quantity: 5,
-        images: [
-          "https://images.unsplash.com/photo-1593032465171-8f5c1c1a5f0c"
-        ]
-      }
-    ];
+    // 🔹 TRAER PRODUCTOS DEL PROVEEDOR
+    const proveedorResponse = await fetch(
+      "https://srv2.best-fashion.net/ApiV3/token/38712c15e4976ba5f4647e891f559271/callType/allStockGroup"
+    );
+
+    const proveedorData = await proveedorResponse.json();
+
+    // 🔹 BASE DE IMÁGENES
+    const imageBaseResponse = await fetch(
+      "https://srv2.best-fashion.net/ApiV3/token/38712c15e4976ba5f4647e891f559271"
+    );
+
+    const imageBaseData = await imageBaseResponse.json();
+    const imageBase = "https://" + imageBaseData.image_url;
+
+    // 🔥 ADAPTAR PRODUCTOS
+    const productos = proveedorData.map(p => ({
+      name: p.name,
+      price: Number(p.price),
+      sku: p.style_code,
+      description: p.description,
+      images: p.pic1 ? [imageBase + p.pic1] : [],
+      variants: p.available_size || []
+    }));
 
     // 🔥 FILTRO PREMIUM
     const productosFiltrados = productos.filter(p =>
-      p.price > 15000 &&
+      p.price > 20 &&
       p.name &&
-      p.images &&
-      p.images.length > 0
+      p.images.length > 0 &&
+      p.variants.length > 0
     );
 
     const resultados = [];
 
     for (const p of productosFiltrados) {
 
-      // 🔍 Buscar producto existente por SKU
+      // 🔍 BUSCAR EXISTENTE
       const search = await fetch(
         `https://${shop}/admin/api/2024-04/products.json?limit=50`,
         {
@@ -93,6 +92,7 @@ export default async function handler(req, res) {
       );
 
       if (!existingProduct) {
+
         // 🆕 CREAR PRODUCTO
         const create = await fetch(
           `https://${shop}/admin/api/2024-04/products.json`,
@@ -107,14 +107,19 @@ export default async function handler(req, res) {
                 title: nombrePremium(p.name),
                 body_html: generarDescripcion(p.name),
                 images: p.images.map(img => ({ src: img })),
-                variants: [
+                options: [
                   {
-                    price: calcularPrecio(p.price).toFixed(0),
-                    sku: p.sku,
-                    inventory_management: "shopify",
-                    inventory_quantity: p.quantity
+                    name: "Talla",
+                    values: p.variants.map(v => v.size)
                   }
-                ]
+                ],
+                variants: p.variants.map(v => ({
+                  price: calcularPrecio(p.price).toFixed(0),
+                  sku: v.stock_id,
+                  option1: v.size,
+                  inventory_management: "shopify",
+                  inventory_quantity: Number(v.qty)
+                }))
               }
             })
           }
@@ -144,23 +149,6 @@ export default async function handler(req, res) {
                 id: variant.id,
                 price: calcularPrecio(p.price).toFixed(0)
               }
-            })
-          }
-        );
-
-        // 🔄 ACTUALIZAR INVENTARIO
-        await fetch(
-          `https://${shop}/admin/api/2024-04/inventory_levels/set.json`,
-          {
-            method: "POST",
-            headers: {
-              "X-Shopify-Access-Token": token,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              location_id: 1,
-              inventory_item_id: variant.inventory_item_id,
-              available: p.quantity
             })
           }
         );
