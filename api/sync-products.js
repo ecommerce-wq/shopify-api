@@ -67,7 +67,12 @@ export default async function handler(req, res) {
 
     // 🔥 🔥 🔥 IMPORTANTE
     // SIN FILTRO PARA VALIDAR QUE TODO FUNCIONA
-    const filtrados = productos.slice(0, 10);
+   const filtrados = productos.filter(p =>
+  p.price > 0 &&
+  p.images.length > 0 &&
+  p.variants.length > 0 &&
+  p.variants.some(v => Number(v.qty) > 0)
+).slice(0, 20);
 
     const resultados = [];
 
