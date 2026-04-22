@@ -1,7 +1,7 @@
 // 🔥 CONFIG
 const USD_RATE = 4000;
 
-// 🔥 FUNCIONES SEGURAS
+// 🔥 FUNCIONES
 
 function generarDescripcion(nombre) {
   return `<p><strong>${nombre || "Producto Premium"}</strong></p>`;
@@ -46,14 +46,13 @@ export default async function handler(req, res) {
 
     const productos = productosRaw.map(p => ({
       name: p?.name || "Producto Premium",
-      price: Number(p?.price || 0),
+      price: Number(p?.price || 10),
       sku: p?.style_code || Math.random().toString(36),
-      images: p?.pic1 ? [imageBase + p.pic1] : [],
-      variants: Array.isArray(p?.available_size) ? p.available_size : []
+      image: p?.pic1 ? imageBase + p.pic1 : null
     }));
 
-    // 🔥 🔥 🔥 SIN FILTROS (CLAVE)
-    const filtrados = productos.slice(0, 20);
+    // 🔥 TRAER MÁS PRODUCTOS
+    const filtrados = productos.slice(0, 30);
 
     const resultados = [];
 
@@ -73,20 +72,13 @@ export default async function handler(req, res) {
         const data = await search.json();
         const productosShopify = data?.products || [];
 
-        const existente = productosShopify.find(prod =>
+        const existe = productosShopify.find(prod =>
           (prod?.variants || []).some(v => v?.sku === p.sku)
         );
 
-        if (!existente) {
+        if (!existe) {
 
-          const variants = (p.variants || []).map(v => ({
-            price: calcularPrecio(p.price),
-            sku: v?.stock_id || Math.random().toString(36),
-            option1: v?.size || "Única",
-            inventory_management: "shopify",
-            inventory_quantity: Number(v?.qty || 0)
-          }));
-
+          // 🆕 CREAR (SIN VARIANTES COMPLEJAS)
           const create = await fetch(
             `https://${shop}/admin/api/2024-04/products.json`,
             {
@@ -100,18 +92,15 @@ export default async function handler(req, res) {
                   title: p.name,
                   body_html: generarDescripcion(p.name),
                   tags: "premium",
-                  images: (p.images || []).map(img => ({ src: img })),
-                  options: [{
-                    name: "Talla",
-                    values: variants.map(v => v.option1)
-                  }],
-                  variants: variants.length ? variants : [{
-                    price: calcularPrecio(p.price),
-                    sku: p.sku,
-                    option1: "Única",
-                    inventory_management: "shopify",
-                    inventory_quantity: 0
-                  }]
+                  images: p.image ? [{ src: p.image }] : [],
+                  variants: [
+                    {
+                      price: calcularPrecio(p.price),
+                      sku: p.sku,
+                      inventory_management: "shopify",
+                      inventory_quantity: 0
+                    }
+                  ]
                 }
               })
             }
@@ -125,14 +114,12 @@ export default async function handler(req, res) {
 
         } else {
           resultados.push({
-            actualizado: existente.title
+            existente: existe.title
           });
         }
 
-      } catch (innerError) {
-        resultados.push({
-          error_producto: innerError.message
-        });
+      } catch (err) {
+        resultados.push({ error: err.message });
       }
     }
 
