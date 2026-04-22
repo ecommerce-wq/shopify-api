@@ -82,13 +82,14 @@ export default async function handler(req, res) {
     }));
 
     // 🔥 FILTRO PREMIUM INTELIGENTE
-    const productosFiltrados = productos.filter(p => {
-      const nombre = (p.name || "").toLowerCase();
-
-      return (
-        p.price > 30 &&
-        p.images.length > 0 &&
-        p.variants.length > 0 &&
+   const productosFiltrados = productos.filter(p => {
+  return (
+    p.price > 15 &&
+    p.images.length > 0 &&
+    p.variants.length > 0 &&
+    p.variants.some(v => Number(v.qty) > 0)
+  );
+});
         (
           nombre.includes("shirt") ||
           nombre.includes("sweater") ||
