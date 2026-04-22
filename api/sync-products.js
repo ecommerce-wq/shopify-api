@@ -1,28 +1,6 @@
 // 🔥 CONFIG
 const USD_RATE = 4000;
 
-// 🔥 MARCAS INTELIGENTES
-function esMarcaValida(texto) {
-  const base = (texto || "")
-    .toLowerCase()
-    .replace(/\s/g, "");
-
-  const marcas = [
-    "bottegaveneta",
-    "celine",
-    "alaia",
-    "fendi",
-    "loewe",
-    "chloe",
-    "valentino",
-    "saintlaurent",
-    "ysl",
-    "stellamccartney"
-  ];
-
-  return marcas.some(m => base.includes(m));
-}
-
 // 🔥 FUNCIONES
 
 function generarDescripcion(nombre) {
@@ -56,7 +34,7 @@ export default async function handler(req, res) {
     const token = process.env.SHOPIFY_ACCESS_TOKEN;
 
     if (!shop || !token) {
-      return res.json({ error: "Variables faltantes" });
+      return res.json({ error: "Variables faltantes", shop, token });
     }
 
     // 🔹 PROVEEDOR
@@ -74,35 +52,22 @@ export default async function handler(req, res) {
     const imgData = await imgRes.json();
     const imageBase = "https://" + imgData.image_url;
 
-    // 🔥 NORMALIZAR DATA
+    // 🔥 NORMALIZAR DATOS
     const productosRaw = Array.isArray(proveedorData)
       ? proveedorData
       : proveedorData.data || Object.values(proveedorData || {});
 
     const productos = productosRaw.map(p => ({
-      name: p.name || "",
-      brand: p.brand || "",
+      name: p.name || "Producto Premium",
       price: Number(p.price || 0),
       sku: p.style_code || Math.random().toString(36),
       images: p.pic1 ? [imageBase + p.pic1] : [],
       variants: p.available_size || []
     }));
 
-    // 🔥 FILTRO FINAL
-    const marcasDetectadas = new Set();
-
-productos.forEach(p => {
-  if (p.brand) marcasDetectadas.add(p.brand);
-});
-
-console.log("MARCAS DEL PROVEEDOR:", Array.from(marcasDetectadas));
-    const filtrados = productos.filter(p =>
-      p.price > 0 &&
-      p.images.length > 0 &&
-      p.variants.length > 0 &&
-      esMarcaValida(p.brand || p.name) &&
-      p.variants.some(v => Number(v.qty) > 0)
-    );
+    // 🔥 🔥 🔥 IMPORTANTE
+    // SIN FILTRO PARA VALIDAR QUE TODO FUNCIONA
+    const filtrados = productos.slice(0, 10);
 
     const resultados = [];
 
@@ -138,10 +103,10 @@ console.log("MARCAS DEL PROVEEDOR:", Array.from(marcasDetectadas));
             },
             body: JSON.stringify({
               product: {
-                title: p.name || "Producto Premium",
+                title: p.name,
                 body_html: generarDescripcion(p.name),
                 product_type: detectarColeccion(p.name),
-                tags: "lujo, premium",
+                tags: "premium",
                 images: p.images.map(img => ({ src: img })),
                 options: [{
                   name: "Talla",
