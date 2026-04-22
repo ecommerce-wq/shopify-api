@@ -10,7 +10,6 @@ function generarDescripcion(nombre) {
     <li>✔ Corte moderno y sofisticado</li>
     <li>✔ Ideal para ocasiones formales o casuales</li>
   </ul>
-  <p>Eleva tu estilo con una prenda que refleja personalidad y buen gusto.</p>
   `;
 }
 
@@ -21,7 +20,7 @@ function calcularPrecio(costo) {
 }
 
 function nombrePremium(nombre) {
-  const base = nombre.toLowerCase();
+  const base = (nombre || "").toLowerCase();
 
   if (base.includes("shirt")) return "Camisa Premium Italiana";
   if (base.includes("sweater")) return "Sweater de Lujo en Cashmere";
@@ -30,11 +29,11 @@ function nombrePremium(nombre) {
   if (base.includes("pants")) return "Pantalón Elegante de Sastrería";
   if (base.includes("blazer")) return "Blazer Premium de Corte Moderno";
 
-  return "Prenda Exclusiva de Alta Gama";
+  return nombre || "Prenda Exclusiva de Alta Gama";
 }
 
 function detectarColeccion(nombre) {
-  const base = nombre.toLowerCase();
+  const base = (nombre || "").toLowerCase();
 
   if (base.includes("shirt")) return "Camisas Premium";
   if (base.includes("pants")) return "Pantalones Elegantes";
@@ -45,7 +44,7 @@ function detectarColeccion(nombre) {
   return "Colección Premium";
 }
 
-// 🚀 HANDLER PRINCIPAL
+// 🚀 HANDLER
 
 export default async function handler(req, res) {
   try {
@@ -56,13 +55,12 @@ export default async function handler(req, res) {
       return res.json({ error: "Variables faltantes", shop, token });
     }
 
-    // 🔹 TRAER PRODUCTOS DEL PROVEEDOR
+    // 🔹 FETCH PROVEEDOR
     const proveedorResponse = await fetch(
       "https://srv2.best-fashion.net/ApiV3/token/38712c15e4976ba5f4647e891f559271/callType/allStockGroup"
     );
 
-   const proveedorData = await proveedorResponse.json();
-
+    const proveedorData = await proveedorResponse.json();
 
     // 🔹 BASE DE IMÁGENES
     const imageBaseResponse = await fetch(
@@ -72,19 +70,20 @@ export default async function handler(req, res) {
     const imageBaseData = await imageBaseResponse.json();
     const imageBase = "https://" + imageBaseData.image_url;
 
-    // 🔥 ADAPTAR PRODUCTOS
+    // 🔥 ADAPTAR DATOS (ANTI ERROR)
     const productosRaw = proveedorData.data || Object.values(proveedorData);
+
     const productos = productosRaw.map(p => ({
-  name: p.name,
-  price: Number(p.price),
-  sku: p.style_code,
-  images: p.pic1 ? [imageBase + p.pic1] : [],
-  variants: p.available_size || []
-}));
-     
+      name: p.name || "Producto Premium",
+      price: Number(p.price || 0),
+      sku: p.style_code || Math.random().toString(36),
+      images: p.pic1 ? [imageBase + p.pic1] : [],
+      variants: p.available_size || []
+    }));
+
     // 🔥 FILTRO PREMIUM INTELIGENTE
     const productosFiltrados = productos.filter(p => {
-      const nombre = p.name.toLowerCase();
+      const nombre = (p.name || "").toLowerCase();
 
       return (
         p.price > 30 &&
@@ -123,7 +122,7 @@ export default async function handler(req, res) {
 
       if (!existingProduct) {
 
-        // 🆕 CREAR PRODUCTO
+        // 🆕 CREAR
         const create = await fetch(
           `https://${shop}/admin/api/2024-04/products.json`,
           {
