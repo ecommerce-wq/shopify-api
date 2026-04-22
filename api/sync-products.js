@@ -63,9 +63,6 @@ export default async function handler(req, res) {
 
    const proveedorData = await proveedorResponse.json();
 
-return res.json({
-  debug: proveedorData
-});
 
     // 🔹 BASE DE IMÁGENES
     const imageBaseResponse = await fetch(
