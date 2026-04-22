@@ -1,18 +1,6 @@
 // 🔥 CONFIG
 const USD_RATE = 4000;
 
-// 🔥 FUNCIONES
-
-function generarDescripcion(nombre) {
-  return `<p><strong>${nombre || "Producto Premium"}</strong></p>`;
-}
-
-function calcularPrecio(costo) {
-  const total = Number(costo || 10) + 150 + 60;
-  const usd = total / USD_RATE;
-  return (usd * 1.3).toFixed(2);
-}
-
 // 🚀 HANDLER
 
 export default async function handler(req, res) {
@@ -31,95 +19,54 @@ export default async function handler(req, res) {
 
     const proveedorData = await proveedorResponse.json();
 
-    // 🔹 IMÁGENES
-    const imgRes = await fetch(
-      "https://srv2.best-fashion.net/ApiV3/token/38712c15e4976ba5f4647e891f559271"
-    );
-
-    const imgData = await imgRes.json();
-    const imageBase = "https://" + (imgData.image_url || "");
-
-    // 🔥 NORMALIZAR
     const productosRaw = Array.isArray(proveedorData)
       ? proveedorData
       : proveedorData.data || Object.values(proveedorData || {});
 
     const resultados = [];
-    let creados = 0;
 
-    // 🔥 RECORRER MUCHOS PRODUCTOS (CLAVE)
-    for (const p of productosRaw) {
-      if (creados >= 20) break; // máximo 20 productos
+    // 🔥 CREAR DIRECTAMENTE (SIN VALIDACIONES)
+    for (let i = 0; i < 20; i++) {
+      const p = productosRaw[i] || {};
 
       try {
-        const name = p?.name || "Producto Premium";
-        const price = Number(p?.price || 10);
-        const sku = p?.style_code || Math.random().toString(36);
-        const image = p?.pic1 ? imageBase + p.pic1 : null;
+        const name = p.name || `Producto Premium ${i + 1}`;
+        const price = Number(p.price || 20);
+        const sku = p.style_code || `SKU-${Date.now()}-${i}`;
 
-        // 🔥 VALIDACIÓN MÍNIMA
-        if (!name || price <= 0) continue;
+        const finalPrice = ((price + 150 + 60) / USD_RATE * 1.3).toFixed(2);
 
-        // 🔍 BUSCAR EN SHOPIFY
-        const search = await fetch(
-          `https://${shop}/admin/api/2024-04/products.json?limit=50`,
+        const create = await fetch(
+          `https://${shop}/admin/api/2024-04/products.json`,
           {
+            method: "POST",
             headers: {
-              "X-Shopify-Access-Token": token
-            }
+              "X-Shopify-Access-Token": token,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              product: {
+                title: name,
+                body_html: `<p>${name}</p>`,
+                tags: "premium",
+                variants: [
+                  {
+                    price: finalPrice,
+                    sku: sku,
+                    inventory_management: "shopify",
+                    inventory_quantity: 0
+                  }
+                ]
+              }
+            })
           }
         );
 
-        const data = await search.json();
-        const productosShopify = data?.products || [];
+        const created = await create.json();
 
-        const existe = productosShopify.find(prod =>
-          (prod?.variants || []).some(v => v?.sku === sku)
-        );
-
-        if (!existe) {
-
-          // 🆕 CREAR
-          const create = await fetch(
-            `https://${shop}/admin/api/2024-04/products.json`,
-            {
-              method: "POST",
-              headers: {
-                "X-Shopify-Access-Token": token,
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
-                product: {
-                  title: name,
-                  body_html: generarDescripcion(name),
-                  tags: "premium",
-                  images: image ? [{ src: image }] : [],
-                  variants: [
-                    {
-                      price: calcularPrecio(price),
-                      sku: sku,
-                      inventory_management: "shopify",
-                      inventory_quantity: 0
-                    }
-                  ]
-                }
-              })
-            }
-          );
-
-          const created = await create.json();
-
-          resultados.push({
-            creado: created?.product?.title || "ok"
-          });
-
-          creados++;
-
-        } else {
-          resultados.push({
-            existente: existe.title
-          });
-        }
+        resultados.push({
+          creado: created?.product?.title || name
+        });
 
       } catch (err) {
         resultados.push({ error: err.message });
@@ -128,7 +75,7 @@ export default async function handler(req, res) {
 
     return res.json({
       status: "ok",
-      total: creados,
+      total: resultados.length,
       resultados
     });
 
