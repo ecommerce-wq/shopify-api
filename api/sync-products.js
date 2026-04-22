@@ -61,7 +61,11 @@ export default async function handler(req, res) {
       "https://srv2.best-fashion.net/ApiV3/token/38712c15e4976ba5f4647e891f559271/callType/allStockGroup"
     );
 
-    const proveedorData = await proveedorResponse.json();
+   const proveedorData = await proveedorResponse.json();
+
+return res.json({
+  debug: proveedorData
+});
 
     // 🔹 BASE DE IMÁGENES
     const imageBaseResponse = await fetch(
