@@ -21,13 +21,31 @@ function calcularPrecio(costo) {
 }
 
 function nombrePremium(nombre) {
-  return nombre
-    .replace(/camisa/i, "Camisa Premium")
-    .replace(/pantalon/i, "Pantalón Elegante")
-    .replace(/sweater/i, "Sweater Exclusivo");
+  const base = nombre.toLowerCase();
+
+  if (base.includes("shirt")) return "Camisa Premium Italiana";
+  if (base.includes("sweater")) return "Sweater de Lujo en Cashmere";
+  if (base.includes("jacket")) return "Chaqueta Exclusiva de Diseño";
+  if (base.includes("coat")) return "Abrigo de Alta Gama";
+  if (base.includes("pants")) return "Pantalón Elegante de Sastrería";
+  if (base.includes("blazer")) return "Blazer Premium de Corte Moderno";
+
+  return "Prenda Exclusiva de Alta Gama";
 }
 
-// 🚀 HANDLER
+function detectarColeccion(nombre) {
+  const base = nombre.toLowerCase();
+
+  if (base.includes("shirt")) return "Camisas Premium";
+  if (base.includes("pants")) return "Pantalones Elegantes";
+  if (base.includes("sweater")) return "Sweaters de Lujo";
+  if (base.includes("jacket") || base.includes("coat")) return "Chaquetas y Abrigos";
+  if (base.includes("blazer")) return "Blazers Exclusivos";
+
+  return "Colección Premium";
+}
+
+// 🚀 HANDLER PRINCIPAL
 
 export default async function handler(req, res) {
   try {
@@ -58,18 +76,28 @@ export default async function handler(req, res) {
       name: p.name,
       price: Number(p.price),
       sku: p.style_code,
-      description: p.description,
       images: p.pic1 ? [imageBase + p.pic1] : [],
       variants: p.available_size || []
     }));
 
-    // 🔥 FILTRO PREMIUM
-    const productosFiltrados = productos.filter(p =>
-      p.price > 20 &&
-      p.name &&
-      p.images.length > 0 &&
-      p.variants.length > 0
-    );
+    // 🔥 FILTRO PREMIUM INTELIGENTE
+    const productosFiltrados = productos.filter(p => {
+      const nombre = p.name.toLowerCase();
+
+      return (
+        p.price > 30 &&
+        p.images.length > 0 &&
+        p.variants.length > 0 &&
+        (
+          nombre.includes("shirt") ||
+          nombre.includes("sweater") ||
+          nombre.includes("jacket") ||
+          nombre.includes("coat") ||
+          nombre.includes("pants") ||
+          nombre.includes("blazer")
+        )
+      );
+    });
 
     const resultados = [];
 
@@ -106,6 +134,8 @@ export default async function handler(req, res) {
               product: {
                 title: nombrePremium(p.name),
                 body_html: generarDescripcion(p.name),
+                product_type: detectarColeccion(p.name),
+                tags: detectarColeccion(p.name) + ", premium, lujo",
                 images: p.images.map(img => ({ src: img })),
                 options: [
                   {
